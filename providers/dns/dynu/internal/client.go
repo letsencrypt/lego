@@ -50,7 +50,7 @@ func (c *Client) GetRecords(ctx context.Context, hostname, recordType string) ([
 	}
 
 	if apiResp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("API error: %w", apiResp.APIException)
+		return nil, fmt.Errorf("API error: %w", *apiResp.APIException)
 	}
 
 	return apiResp.DNSRecords, nil
@@ -73,7 +73,7 @@ func (c *Client) AddNewRecord(ctx context.Context, domainID int64, record DNSRec
 	}
 
 	if apiResp.StatusCode/100 != 2 {
-		return fmt.Errorf("API error: %w", apiResp.APIException)
+		return fmt.Errorf("API error: %w", *apiResp.APIException)
 	}
 
 	return nil
@@ -109,7 +109,7 @@ func (c *Client) GetRootDomain(ctx context.Context, hostname string) (*DNSHostna
 	}
 
 	if apiResp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("API error: %w", apiResp.APIException)
+		return nil, fmt.Errorf("API error: %w", *apiResp.APIException)
 	}
 
 	return &apiResp, nil

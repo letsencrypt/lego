@@ -130,5 +130,5 @@ func parseError(req *http.Request, resp *http.Response) error {
 		return errutils.NewUnexpectedStatusCodeError(req, resp.StatusCode, raw)
 	}
 
-	return fmt.Errorf("status code: %d, %w", resp.StatusCode, errAPI)
+	return fmt.Errorf("status code: %d, %w", resp.StatusCode, *errAPI)
 }
