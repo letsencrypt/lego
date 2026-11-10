@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -20,6 +21,9 @@ const (
 	RSA3072 = KeyType("RSA3072")
 	RSA4096 = KeyType("RSA4096")
 	RSA8192 = KeyType("RSA8192")
+	MLDSA44 = KeyType("MLDSA44")
+	MLDSA65 = KeyType("MLDSA65")
+	MLDSA87 = KeyType("MLDSA87")
 )
 
 // KeyType represents the key algo as well as the key size or curve to use.
@@ -44,6 +48,12 @@ func ToKeyType(keyType string) (KeyType, error) {
 		return EC256, nil
 	case string(EC384):
 		return EC384, nil
+	case string(MLDSA44):
+		return MLDSA44, nil
+	case string(MLDSA65):
+		return MLDSA65, nil
+	case string(MLDSA87):
+		return MLDSA87, nil
 	}
 
 	return "", fmt.Errorf("unsupported key type: %s", keyType)
@@ -53,6 +63,7 @@ func AllKeyTypes() []KeyType {
 	return []KeyType{
 		EC256, EC384,
 		RSA2048, RSA3072, RSA4096, RSA8192,
+		MLDSA44, MLDSA65, MLDSA87,
 	}
 }
 
@@ -91,6 +102,12 @@ func GetKeyType(key any) (KeyType, error) {
 	case *ecdsa.PrivateKey:
 		return getECDSAKeyType(k.Curve)
 
+	case *mldsa.PublicKey:
+		return getMLDSAKeyType(k.Parameters())
+
+	case *mldsa.PrivateKey:
+		return getMLDSAKeyType(k.PublicKey().Parameters())
+
 	default:
 		return "", fmt.Errorf("unsupported key type: %T", k)
 	}
@@ -119,5 +136,18 @@ func getECDSAKeyType(curve elliptic.Curve) (KeyType, error) {
 		return EC384, nil
 	default:
 		return "", fmt.Errorf("unsupported ECDSA curve: %d", curve.Params().BitSize)
+	}
+}
+
+func getMLDSAKeyType(params mldsa.Parameters) (KeyType, error) {
+	switch params {
+	case mldsa.MLDSA44():
+		return MLDSA44, nil
+	case mldsa.MLDSA65():
+		return MLDSA65, nil
+	case mldsa.MLDSA87():
+		return MLDSA87, nil
+	default:
+		return "", fmt.Errorf("unsupported ML-DSA parameters: %s", params)
 	}
 }

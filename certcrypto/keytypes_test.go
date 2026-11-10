@@ -4,9 +4,11 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,6 +46,21 @@ func TestGetPrivateKeyType(t *testing.T) {
 			desc:     "RSA3072",
 			key:      mustGenerateKey(rsa.GenerateKey(rand.Reader, 3072)),
 			expected: RSA3072,
+		},
+		{
+			desc:     "MLDSA44",
+			key:      mustGenerateKey(mldsa.GenerateKey(mldsa.MLDSA44())),
+			expected: MLDSA44,
+		},
+		{
+			desc:     "MLDSA65",
+			key:      mustGenerateKey(mldsa.GenerateKey(mldsa.MLDSA65())),
+			expected: MLDSA65,
+		},
+		{
+			desc:     "MLDSA87",
+			key:      mustGenerateKey(mldsa.GenerateKey(mldsa.MLDSA87())),
+			expected: MLDSA87,
 		},
 	}
 
@@ -93,4 +110,23 @@ func TestGetCertificateKeyType_error(t *testing.T) {
 
 	_, err = GetCertificateKeyType(cert)
 	require.EqualError(t, err, "unsupported ECDSA curve: 224")
+}
+
+func TestToKeyType(t *testing.T) {
+	for _, expected := range AllKeyTypes() {
+		t.Run(expected.String(), func(t *testing.T) {
+			t.Parallel()
+
+			keyType, err := ToKeyType(strings.ToLower(expected.String()))
+			require.NoError(t, err)
+
+			assert.Equal(t, expected, keyType)
+			assert.True(t, IsSupported(keyType))
+		})
+	}
+}
+
+func TestToKeyType_error(t *testing.T) {
+	_, err := ToKeyType("MLDSA42")
+	require.EqualError(t, err, "unsupported key type: MLDSA42")
 }

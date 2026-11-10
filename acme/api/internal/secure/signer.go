@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -159,6 +160,15 @@ func signatureAlgorithm(privKey crypto.Signer) jose.SignatureAlgorithm {
 			alg = jose.ES256
 		} else if k.Curve == elliptic.P384() {
 			alg = jose.ES384
+		}
+	case *mldsa.PublicKey:
+		switch k.Parameters() {
+		case mldsa.MLDSA44():
+			alg = jose.MLDSA44
+		case mldsa.MLDSA65():
+			alg = jose.MLDSA65
+		case mldsa.MLDSA87():
+			alg = jose.MLDSA87
 		}
 	}
 

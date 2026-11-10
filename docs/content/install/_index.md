@@ -108,7 +108,7 @@ The lego maintainers are only maintaining the AUR and Snap packages, the other p
 
 Requirements:
 
-- go1.25+.
+- go1.27+.
 
 To install the latest version from sources, just run:
 

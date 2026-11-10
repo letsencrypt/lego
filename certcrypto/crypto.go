@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -98,6 +99,8 @@ func ParsePEMPrivateKey(key []byte) (crypto.Signer, error) {
 			return key, nil
 		case ed25519.PrivateKey:
 			return key, nil
+		case *mldsa.PrivateKey:
+			return key, nil
 		default:
 			return nil, fmt.Errorf("found unknown private key type in PKCS#8 wrapping: %T", key)
 		}
@@ -124,6 +127,12 @@ func GeneratePrivateKey(keyType KeyType) (crypto.Signer, error) {
 		return rsa.GenerateKey(rand.Reader, 4096)
 	case RSA8192:
 		return rsa.GenerateKey(rand.Reader, 8192)
+	case MLDSA44:
+		return mldsa.GenerateKey(mldsa.MLDSA44())
+	case MLDSA65:
+		return mldsa.GenerateKey(mldsa.MLDSA65())
+	case MLDSA87:
+		return mldsa.GenerateKey(mldsa.MLDSA87())
 	}
 
 	return nil, fmt.Errorf("invalid KeyType: %s", keyType)
@@ -175,7 +184,7 @@ func PEMBlock(data any) *pem.Block {
 	var pemBlock *pem.Block
 
 	switch key := data.(type) {
-	case *ecdsa.PrivateKey, *rsa.PrivateKey:
+	case *ecdsa.PrivateKey, *rsa.PrivateKey, *mldsa.PrivateKey:
 		keyBytes, _ := x509.MarshalPKCS8PrivateKey(key)
 		pemBlock = &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
 	case *x509.CertificateRequest:

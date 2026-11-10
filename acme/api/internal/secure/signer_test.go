@@ -3,6 +3,7 @@ package secure
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -31,6 +32,50 @@ func TestSigner_SignContent(t *testing.T) {
 	require.NoError(t, err)
 
 	check(t, content)
+}
+
+func TestSigner_SignContent_mldsa(t *testing.T) {
+	testCases := []struct {
+		params   mldsa.Parameters
+		expected jose.SignatureAlgorithm
+	}{
+		{params: mldsa.MLDSA44(), expected: jose.MLDSA44},
+		{params: mldsa.MLDSA65(), expected: jose.MLDSA65},
+		{params: mldsa.MLDSA87(), expected: jose.MLDSA87},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.params.String(), func(t *testing.T) {
+			t.Parallel()
+
+			privKey, err := mldsa.GenerateKey(test.params)
+			require.NoError(t, err)
+
+			// No key identifier: the public key is embedded as a JWK, like for a new account.
+			signer := NewSigner(privKey, "")
+
+			content, err := signer.SignContent(&MockNonceSource{}, "https://foo.example", []byte("{}"))
+			require.NoError(t, err)
+
+			check(t, content)
+
+			parsed, err := jose.ParseSignedJSON(content.FullSerialize(), []jose.SignatureAlgorithm{test.expected})
+			require.NoError(t, err)
+
+			require.Len(t, parsed.Signatures, 1)
+			assert.Equal(t, string(test.expected), parsed.Signatures[0].Header.Algorithm)
+
+			payload, err := parsed.Verify(privKey.PublicKey())
+			require.NoError(t, err)
+
+			assert.JSONEq(t, "{}", string(payload))
+
+			keyAuth, err := signer.GetKeyAuthorization("token")
+			require.NoError(t, err)
+
+			assert.Regexp(t, `^token\.[A-Za-z0-9_-]{43}$`, keyAuth)
+		})
+	}
 }
 
 func TestSigner_SignEAB(t *testing.T) {
