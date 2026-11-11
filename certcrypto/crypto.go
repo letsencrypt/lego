@@ -99,6 +99,10 @@ func ParsePEMPrivateKey(key []byte) (crypto.Signer, error) {
 		case ed25519.PrivateKey:
 			return key, nil
 		default:
+			if signer, ok := key.(crypto.Signer); ok && isMLDSAPrivateKey(key) {
+				return signer, nil
+			}
+
 			return nil, fmt.Errorf("found unknown private key type in PKCS#8 wrapping: %T", key)
 		}
 	}
@@ -126,7 +130,7 @@ func GeneratePrivateKey(keyType KeyType) (crypto.Signer, error) {
 		return rsa.GenerateKey(rand.Reader, 8192)
 	}
 
-	return nil, fmt.Errorf("invalid KeyType: %s", keyType)
+	return generateMLDSAKey(keyType)
 }
 
 type CSROptions struct {
@@ -176,15 +180,24 @@ func PEMBlock(data any) *pem.Block {
 
 	switch key := data.(type) {
 	case *ecdsa.PrivateKey, *rsa.PrivateKey:
-		keyBytes, _ := x509.MarshalPKCS8PrivateKey(key)
-		pemBlock = &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
+		pemBlock = pkcs8PEMBlock(key)
 	case *x509.CertificateRequest:
 		pemBlock = &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: key.Raw}
 	case DERCertificateBytes:
 		pemBlock = &pem.Block{Type: "CERTIFICATE", Bytes: []byte(data.(DERCertificateBytes))}
+	default:
+		if isMLDSAPrivateKey(key) {
+			pemBlock = pkcs8PEMBlock(key)
+		}
 	}
 
 	return pemBlock
+}
+
+func pkcs8PEMBlock(key any) *pem.Block {
+	keyBytes, _ := x509.MarshalPKCS8PrivateKey(key)
+
+	return &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
 }
 
 func pemDecode(data []byte) (*pem.Block, error) {

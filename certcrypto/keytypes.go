@@ -46,14 +46,19 @@ func ToKeyType(keyType string) (KeyType, error) {
 		return EC384, nil
 	}
 
+	kt := KeyType(strings.ToUpper(keyType))
+	if slices.Contains(mldsaKeyTypes(), kt) {
+		return kt, nil
+	}
+
 	return "", fmt.Errorf("unsupported key type: %s", keyType)
 }
 
 func AllKeyTypes() []KeyType {
-	return []KeyType{
+	return append([]KeyType{
 		EC256, EC384,
 		RSA2048, RSA3072, RSA4096, RSA8192,
-	}
+	}, mldsaKeyTypes()...)
 }
 
 // IsSupported checks if the key type is supported.
@@ -92,7 +97,7 @@ func GetKeyType(key any) (KeyType, error) {
 		return getECDSAKeyType(k.Curve)
 
 	default:
-		return "", fmt.Errorf("unsupported key type: %T", k)
+		return getMLDSAKeyType(k)
 	}
 }
 

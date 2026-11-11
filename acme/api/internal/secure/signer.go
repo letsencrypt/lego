@@ -160,6 +160,8 @@ func signatureAlgorithm(privKey crypto.Signer) jose.SignatureAlgorithm {
 		} else if k.Curve == elliptic.P384() {
 			alg = jose.ES384
 		}
+	default:
+		alg = mldsaSignatureAlgorithm(k)
 	}
 
 	return alg
